@@ -1,0 +1,36 @@
+name: 📊 Update Metrics
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # Toda segunda-feira às 09h UTC
+  workflow_dispatch:
+
+jobs:
+  update-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch metrics from OpenAlex
+        run: python scripts/fetch_metrics.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _data/metrics.json
+          if git diff --cached --quiet; then
+            echo "Metrics unchanged."
+          else
+            git commit -m "🤖 Metrics update · $(date +'%Y-%m-%d')"
+            git push
+          fi
