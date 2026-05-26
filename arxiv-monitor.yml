@@ -1,0 +1,36 @@
+name: 📡 Monitor arXiv
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # Todos os dias às 08h UTC (05h Brasília)
+  workflow_dispatch:       # Permite rodar manualmente
+
+jobs:
+  fetch-arxiv:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch arXiv feed
+        run: python scripts/fetch_arxiv.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _data/arxiv_feed.json
+          if git diff --cached --quiet; then
+            echo "No new papers today."
+          else
+            git commit -m "🤖 arXiv feed · $(date +'%Y-%m-%d')"
+            git push
+          fi
